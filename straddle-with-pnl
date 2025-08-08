@@ -71,7 +71,7 @@ netPnL        = (straddleValue - straddleCost)
 isPreviousDay = dayofmonth(time) == dayofmonth(timenow - 24 * 60 * 60 * 1000)
 isCurrentDay = dayofmonth(time) == dayofmonth(timenow)
 valueColor   = netPnL > 0 ? color.teal : color.red
-plot = isPreviousDay or isCurrentDay
+plot = (isPreviousDay or isCurrentDay) and straddleCost > 0
 
 // === Plotting ===
 plot(plot  ? straddleCost  : na, title="Straddle Cost ($)",        color=color.blue, linewidth=2)
