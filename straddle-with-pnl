@@ -79,4 +79,4 @@ plot(plot ? straddleValue : na, title="Straddle Total Value ($)", color=valueCol
 
 // === Last-Bar Label ===
 if barstate.islast and plot
-    label.new(bar_index, straddleValue, "Net $" + str.tostring(math.abs(netPnL), "#.##") + " | Call $" + str.tostring(callValue, "#.##") + " | Put $" + str.tostring(putValue, "#.##"), style=label.style_label_upper_left, color=valueColor, textcolor=color.white)
+    label.new(bar_index, straddleCost, "Net $" + str.tostring(math.abs(netPnL), "#.##") + " | Call $" + str.tostring(callValue, "#.##") + " | Put $" + str.tostring(putValue, "#.##"), style=label.style_label_lower_left, color=valueColor, textcolor=color.white)
