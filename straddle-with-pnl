@@ -1,22 +1,23 @@
 //@version=6
 indicator("Straddle P&L", overlay=false)
 
+// === Base Ticker Detection ===
 base = syminfo.ticker
 
-// Define option prices for all tickers using request.security (evaluate once per ticker)
+// === Option Price Data (via request.security) ===
 amznCall = request.security("AMZN250822C225.0", "1", close)
 amznPut  = request.security("AMZN250822P225.0", "1", close)
 
 hoodCall = request.security("HOOD250822C111.0", "1", close)
 hoodPut  = request.security("HOOD250822P111.0", "1", close)
 
-nvdaCall = request.security("NVDA250822C180.0", "1", close)
-nvdaPut  = request.security("NVDA250822P180.0", "1", close)
+nvdaCall = request.security("NVDA250815C180.0", "1", close)
+nvdaPut  = request.security("NVDA250815P180.0", "1", close)
 
 pltrCall = request.security("PLTR250822C185.0", "1", close)
 pltrPut  = request.security("PLTR250822P185.0", "1", close)
 
-// Use pre-evaluated variables only once via switch
+// === Call / Put Value Selection ===
 callValue = switch base
     'AMZN' => amznCall
     'HOOD' => hoodCall
@@ -31,17 +32,18 @@ putValue = switch base
     'PLTR' => pltrPut
     => na
 
+// === Assigned Costs ===
 callCost = switch base
     'AMZN' => 4.55
     'HOOD' => 5.75
-    'NVDA' => 0.00
+    'NVDA' => 3.50
     'PLTR' => 0.00
     => na
 
 putCost = switch base
     'AMZN' => 5.00
     'HOOD' => 6.00
-    'NVDA' => 0.00
+    'NVDA' => 4.15
     'PLTR' => 0.00
     => na
 
@@ -52,26 +54,29 @@ contracts = switch base
     'PLTR' => 5
     => na
 
-// AMD is a special case since you disabled request.security() on the put
+// === Special Case: AMD ===
 if base == 'AMD'
     callValue := request.security("AMD251017C180.0", "1", close)
-    putValue := 20.70
-    callCost := 16.85
-    putCost := 15.30
+    putValue  := 20.70
+    callCost  := 16.85
+    putCost   := 15.30
     contracts := 1
 
-// Final Calculations
-straddleCost = (callCost + putCost) * contracts * 100
+// === Final Calculations ===
+straddleCost  = (callCost + putCost) * contracts * 100
 straddleValue = (callValue + putValue) * contracts * 100
-netPnL = straddleValue - straddleCost
+netPnL        = (straddleValue - straddleCost)
 
-// Coloring
-valueColor = netPnL > 0 ? color.teal : color.red
+// === Plot Only for Current Day ===
+isPreviousDay = dayofmonth(time) == dayofmonth(timenow - 24 * 60 * 60 * 1000)
+isCurrentDay = dayofmonth(time) == dayofmonth(timenow)
+valueColor   = netPnL > 0 ? color.teal : color.red
+plot = isPreviousDay or isCurrentDay
 
-// Plot
-plot(straddleCost, title="Straddle Cost ($)", color=color.blue, linewidth=2)
-plot(straddleValue, title="Straddle Total Value ($)", color=valueColor, linewidth=2)
+// === Plotting ===
+plot(plot  ? straddleCost  : na, title="Straddle Cost ($)",        color=color.blue, linewidth=2)
+plot(plot ? straddleValue : na, title="Straddle Total Value ($)", color=valueColor, linewidth=2)
 
-// Label
-if barstate.islast
-    label.new(bar_index, straddleValue, "Net P&L: $" + str.tostring(netPnL, "#.##"), style=label.style_label_up, color=valueColor, textcolor=color.white)
+// === Last-Bar Label ===
+if barstate.islast and plot
+    label.new(bar_index, straddleValue, "Net $" + str.tostring(math.abs(netPnL), "#.##") + " | Call $" + str.tostring(callValue, "#.##") + " | Put $" + str.tostring(putValue, "#.##"), style=label.style_label_upper_left, color=valueColor, textcolor=color.white)
